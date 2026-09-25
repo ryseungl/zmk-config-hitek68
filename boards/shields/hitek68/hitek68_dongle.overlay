@@ -1,0 +1,7 @@
+#include "hitek68.dtsi"
+
+/ {
+    chosen {
+        zmk,kscan = &kscan0;
+    };
+};
