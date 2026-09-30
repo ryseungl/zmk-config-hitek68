@@ -16,3 +16,15 @@ config SHIELD_HITEK68_RIGHT
 
 config SHIELD_HITEK68_DONGLE
     def_bool $(shields_list_contains,hitek68_dongle)
+
+if SHIELD_HITEK68_DONGLE
+
+config ZMK_SPLIT_BATTERY_HID_REPORT
+    bool "Expose split-half battery levels over USB HID"
+    default y
+    help
+      Adds a vendor-defined USB HID interface (Usage Page 0xFF00) on the
+      dongle that reports left/right peripheral battery levels to the host.
+      Requires CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING.
+
+endif
