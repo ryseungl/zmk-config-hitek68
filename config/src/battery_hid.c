@@ -113,14 +113,10 @@ static int hitek68_battery_hid_init(void) {
 
     /* Register the device with its report descriptor and ops.
      * This must be done before usb_hid_init(). */
-    int err = usb_hid_register_device(hid_dev, vendor_report_desc,
-                                      sizeof(vendor_report_desc), &hid_ops);
-    if (err) {
-        LOG_ERR("usb_hid_register_device failed: %d", err);
-        return err;
-    }
+    usb_hid_register_device(hid_dev, vendor_report_desc,
+                            sizeof(vendor_report_desc), &hid_ops);
 
-    err = usb_hid_init(hid_dev);
+    int err = usb_hid_init(hid_dev);
     if (err) {
         LOG_ERR("usb_hid_init failed: %d", err);
         return err;
