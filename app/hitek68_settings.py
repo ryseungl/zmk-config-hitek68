@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-Hitek68 runtime settings — adjust debounce and deep-sleep timeout without
-reflashing.
+Hitek68 runtime settings — adjust the deep-sleep timeout without reflashing.
 
 Sends commands to the dongle via HID output reports (Report ID 0x02) on the
 vendor interface (Usage Page 0xFF00). The dongle relays them to the halves
 over BLE; halves apply immediately and persist to flash.
 
 Usage:
-    python hitek68_settings.py debounce --press 5 --release 5
-    python hitek68_settings.py debounce --press 10 --release 10 --target left
     python hitek68_settings.py sleep --timeout 1800000
     python hitek68_settings.py sleep --timeout 0        # never sleep
     python hitek68_settings.py sleep --minutes 30
+    python hitek68_settings.py sleep --minutes 45 --target left
 
 Targets: both (default), left, right
 """
@@ -33,12 +31,10 @@ VENDOR_USAGE_PAGE = 0xFF00
 VENDOR_USAGE = 0x01
 
 REPORT_ID_COMMAND = 0x02
-CMD_SET_DEBOUNCE = 0x01
 CMD_SET_SLEEP = 0x02
 
 TARGETS = {"both": 0, "left": 1, "right": 2}
 
-DEBOUNCE_MAX_MS = 16383
 SLEEP_MIN_MS = 60000  # 1 minute (0 = disabled)
 
 
@@ -74,20 +70,6 @@ def send_command(cmd, target, payload):
         print(f"Warning: only wrote {n}/{len(report)} bytes", file=sys.stderr)
 
 
-def cmd_debounce(args):
-    if not (0 <= args.press <= DEBOUNCE_MAX_MS):
-        print(f"press must be 0-{DEBOUNCE_MAX_MS} ms", file=sys.stderr)
-        sys.exit(1)
-    if not (0 <= args.release <= DEBOUNCE_MAX_MS):
-        print(f"release must be 0-{DEBOUNCE_MAX_MS} ms", file=sys.stderr)
-        sys.exit(1)
-
-    target = TARGETS[args.target]
-    payload = struct.pack("<HH", args.press, args.release) + b"\x00"
-    send_command(CMD_SET_DEBOUNCE, target, payload)
-    print(f"Debounce -> {args.target}: press={args.press}ms release={args.release}ms")
-
-
 def cmd_sleep(args):
     if args.minutes is not None:
         timeout_ms = int(args.minutes * 60000)
@@ -113,12 +95,6 @@ def cmd_sleep(args):
 def main():
     p = argparse.ArgumentParser(description="Hitek68 runtime settings (no reflash)")
     sub = p.add_subparsers(dest="cmd", required=True)
-
-    d = sub.add_parser("debounce", help="Set key debounce times")
-    d.add_argument("--press", type=int, default=5, help="Press debounce ms (0-16383)")
-    d.add_argument("--release", type=int, default=5, help="Release debounce ms (0-16383)")
-    d.add_argument("--target", choices=TARGETS, default="both")
-    d.set_defaults(func=cmd_debounce)
 
     s = sub.add_parser("sleep", help="Set deep-sleep idle timeout")
     g = s.add_mutually_exclusive_group(required=True)

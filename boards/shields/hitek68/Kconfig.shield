@@ -33,20 +33,12 @@ config HITEK68_SETTINGS_RELAY
     depends on ZMK_SPLIT_BATTERY_HID_REPORT
     help
       Extends the dongle's vendor HID interface with output reports so the
-      host app can send debounce/sleep settings. The dongle relays them to
+      host app can send sleep settings. The dongle relays them to
       each connected half via the Hitek68 settings GATT service.
 
 endif
 
 if SHIELD_HITEK68_LEFT || SHIELD_HITEK68_RIGHT
-
-config HITEK68_RUNTIME_DEBOUNCE
-    bool "Runtime-adjustable key debounce (no reflash)"
-    default y
-    help
-      Uses the hitek68,kscan-gpio-matrix driver (a fork of ZMK's with the
-      debounce config in RAM) so debounce press/release times can be changed
-      at runtime and persist via Zephyr settings.
 
 config HITEK68_RUNTIME_SLEEP
     bool "Runtime-adjustable deep-sleep timeout (no reflash)"
@@ -59,9 +51,9 @@ config HITEK68_RUNTIME_SLEEP
 config HITEK68_SETTINGS_GATT
     bool "Expose runtime settings over BLE GATT"
     default y
-    depends on HITEK68_RUNTIME_DEBOUNCE || HITEK68_RUNTIME_SLEEP
+    depends on HITEK68_RUNTIME_SLEEP
     help
       Defines the Hitek68 settings GATT service on split halves so the
-      dongle can read/write debounce and sleep timeout over BLE.
+      dongle can read/write the sleep timeout over BLE.
 
 endif

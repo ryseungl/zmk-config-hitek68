@@ -35,7 +35,6 @@ LOG_MODULE_REGISTER(hitek68_battery_hid, CONFIG_ZMK_LOG_LEVEL);
 #define BATTERY_UNKNOWN 0xFF
 
 /* Command IDs (in output report) */
-#define CMD_SET_DEBOUNCE 0x01
 #define CMD_SET_SLEEP 0x02
 
 /* Target: 0=both halves, 1=left, 2=right */
@@ -90,13 +89,7 @@ static void int_in_ready_cb(const struct device *dev) {
     k_sem_give(&hid_sem);
 }
 
-/* Relay API (settings_relay.c). Weak stubs if relay not built. */
-__weak int hitek68_relay_set_debounce(uint8_t target, uint32_t press_ms, uint32_t release_ms) {
-    ARG_UNUSED(target);
-    ARG_UNUSED(press_ms);
-    ARG_UNUSED(release_ms);
-    return -ENOSYS;
-}
+/* Relay API (settings_relay.c). Weak stub if relay not built. */
 __weak int hitek68_relay_set_sleep(uint8_t target, uint32_t timeout_ms) {
     ARG_UNUSED(target);
     ARG_UNUSED(timeout_ms);
@@ -132,13 +125,6 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
     }
 
     switch (cmd) {
-    case CMD_SET_DEBOUNCE: {
-        uint16_t press = sys_get_le16(&r[2]);
-        uint16_t release = sys_get_le16(&r[4]);
-        LOG_INF("CMD set debounce: target=%u press=%u release=%u", target, press, release);
-        hitek68_relay_set_debounce(target, press, release);
-        break;
-    }
     case CMD_SET_SLEEP: {
         uint32_t timeout = sys_get_le32(&r[2]);
         LOG_INF("CMD set sleep: target=%u timeout=%u", target, timeout);

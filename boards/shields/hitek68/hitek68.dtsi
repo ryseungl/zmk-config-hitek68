@@ -41,7 +41,7 @@
     };
 
     kscan0: kscan {
-        compatible = "hitek68,kscan-gpio-matrix";
+        compatible = "zmk,kscan-gpio-matrix";
         label = "KSCAN";
         diode-direction = "col2row";
     };

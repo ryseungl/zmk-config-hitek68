@@ -22,8 +22,6 @@ LOG_MODULE_REGISTER(hitek68_settings_relay, CONFIG_ZMK_LOG_LEVEL);
 /* Must match hitek68_settings_gatt.c */
 #define HITEK68_SETTINGS_SVC_UUID \
     BT_UUID_128_ENCODE(0x6e400001, 0xb5a3, 0xf393, 0xe0a9, 0xe50e24dcca9e)
-#define HITEK68_SETTINGS_DEBOUNCE_UUID \
-    BT_UUID_128_ENCODE(0x6e400002, 0xb5a3, 0xf393, 0xe0a9, 0xe50e24dcca9e)
 #define HITEK68_SETTINGS_SLEEP_UUID \
     BT_UUID_128_ENCODE(0x6e400003, 0xb5a3, 0xf393, 0xe0a9, 0xe50e24dcca9e)
 
@@ -31,7 +29,6 @@ LOG_MODULE_REGISTER(hitek68_settings_relay, CONFIG_ZMK_LOG_LEVEL);
 
 struct hitek68_peripheral {
     struct bt_conn *conn;
-    uint16_t debounce_handle;
     uint16_t sleep_handle;
     bool discovering;
     struct k_work_delayable discover_work;
@@ -58,7 +55,6 @@ static struct hitek68_peripheral *periph_alloc(struct bt_conn *conn) {
     for (int i = 0; i < MAX_PERIPHERALS; i++) {
         if (peripherals[i].conn == NULL) {
             peripherals[i].conn = bt_conn_ref(conn);
-            peripherals[i].debounce_handle = 0;
             peripherals[i].sleep_handle = 0;
             peripherals[i].discovering = false;
             k_work_init_delayable(&peripherals[i].discover_work, discover_work_cb);
@@ -73,7 +69,6 @@ static void periph_free(struct bt_conn *conn) {
     if (p) {
         bt_conn_unref(p->conn);
         p->conn = NULL;
-        p->debounce_handle = 0;
         p->sleep_handle = 0;
         p->discovering = false;
     }
@@ -94,21 +89,16 @@ static uint8_t chrc_discover_func(struct bt_conn *conn, const struct bt_gatt_att
     if (!attr) {
         /* Discovery complete */
         p->discovering = false;
-        LOG_INF("Settings discovery complete: debounce_handle=%u sleep_handle=%u",
-                p->debounce_handle, p->sleep_handle);
+        LOG_INF("Settings discovery complete: sleep_handle=%u", p->sleep_handle);
         return BT_GATT_ITER_STOP;
     }
 
     struct bt_gatt_chrc *chrc = attr->user_data;
     const struct bt_uuid *uuid = chrc->uuid;
 
-    struct bt_uuid_128 debounce_uuid = BT_UUID_INIT_128(HITEK68_SETTINGS_DEBOUNCE_UUID);
     struct bt_uuid_128 sleep_uuid = BT_UUID_INIT_128(HITEK68_SETTINGS_SLEEP_UUID);
 
-    if (!bt_uuid_cmp(uuid, &debounce_uuid.uuid)) {
-        p->debounce_handle = chrc->value_handle;
-        LOG_DBG("Found debounce char: handle %u", chrc->value_handle);
-    } else if (!bt_uuid_cmp(uuid, &sleep_uuid.uuid)) {
+    if (!bt_uuid_cmp(uuid, &sleep_uuid.uuid)) {
         p->sleep_handle = chrc->value_handle;
         LOG_DBG("Found sleep char: handle %u", chrc->value_handle);
     }
@@ -209,39 +199,6 @@ static void discover_work_cb(struct k_work *work) {
 }
 
 /* ---- Public relay API (called from HID output report handler) ---- */
-
-int hitek68_relay_set_debounce(uint8_t target, uint32_t press_ms, uint32_t release_ms) {
-    uint8_t value[8];
-    sys_put_le32(press_ms, &value[0]);
-    sys_put_le32(release_ms, &value[4]);
-
-    uint8_t left_slot = hitek68_battery_left_slot();
-    int count = 0;
-
-    for (int i = 0; i < MAX_PERIPHERALS; i++) {
-        struct hitek68_peripheral *p = &peripherals[i];
-        if (!p->conn || !p->debounce_handle) {
-            continue;
-        }
-        /* Target filter: 0=all, 1=left, 2=right */
-        if (target == 1 && i != left_slot) {
-            continue;
-        }
-        if (target == 2 && i != (left_slot ^ 1)) {
-            continue;
-        }
-
-        int err = bt_gatt_write_without_response(p->conn, p->debounce_handle, value,
-                                                 sizeof(value), false);
-        if (err) {
-            LOG_ERR("Debounce write failed for slot %d: %d", i, err);
-        } else {
-            count++;
-            LOG_INF("Debounce sent to slot %d: %u/%u ms", i, press_ms, release_ms);
-        }
-    }
-    return count;
-}
 
 int hitek68_relay_set_sleep(uint8_t target, uint32_t timeout_ms) {
     uint8_t value[4];
