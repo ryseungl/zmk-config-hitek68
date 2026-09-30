@@ -27,8 +27,8 @@
                 &kp BSLH &kp P  &kp O  &kp I  &kp U  &kp Y  &kp MINUS &none
                 &kp SQT  &kp SEMI &kp L &kp K &kp J  &kp H  &kp EQUAL &none
                 &kp RSHIFT &kp FSLH &kp DOT &kp COMMA &kp M &kp N &kp TILDE &none
-                &none &none &none &none &kp SPACE &kp ENTER &kp PSCRN &kp C_MUTE
-                &none &none &none &none &kp RCTRL &kp RGUI &kp F24 &none
+                &none &none &none &none &kp PSCRN &kp ENTER &kp SPACE &kp C_MUTE
+                &none &none &none &none &tog 1 &kp RGUI &kp RCTRL &none
             >;
             /* sensor 0 = left encoder, sensor 1 = right encoder */
             sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp C_VOL_UP C_VOL_DN>;
