@@ -31,7 +31,7 @@
                 &none &none &none &none &kp RCTRL &kp RGUI &tog 2 &none
             >;
             /* sensor 0 = left encoder, sensor 1 = right encoder */
-            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp VOL_UP VOL_DN>;
+            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
         function_layer {
@@ -49,7 +49,7 @@
                 &trans &trans &trans &trans &trans &trans &trans &trans
                 &trans &trans &trans &trans &trans &trans &trans &trans
             >;
-            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp VOL_UP VOL_DN>;
+            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
         layer_two {
@@ -67,7 +67,7 @@
                 &trans &trans &trans &trans &trans &trans &trans &trans
                 &trans &trans &trans &trans &trans &trans &trans &trans
             >;
-            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp VOL_UP VOL_DN>;
+            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
     };
 };
