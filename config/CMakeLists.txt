@@ -28,7 +28,11 @@ if(CONFIG_HITEK68_RUNTIME_DEBOUNCE OR CONFIG_HITEK68_RUNTIME_SLEEP)
 endif()
 
 if(CONFIG_HITEK68_RUNTIME_DEBOUNCE)
-  target_sources(app PRIVATE src/kscan_hitek68_matrix.c)
+  # Kscan driver: use zephyr_library (not target_sources) for proper
+  # driver registration via DEVICE_DT_INST_DEFINE.
+  zephyr_library_named(hitek68_kscan)
+  zephyr_library_sources(src/kscan_hitek68_matrix.c)
+  zephyr_include_directories(include)
 endif()
 
 if(CONFIG_HITEK68_RUNTIME_SLEEP)
