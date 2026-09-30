@@ -1,20 +1,73 @@
-// This file was generated from a template. Edit it to match your keyboard.
-// See https://zmk.dev/docs/development/hardware-integration/new-shield for more instructions.
-
 #include <behaviors.dtsi>
 #include <dt-bindings/zmk/keys.h>
 
 / {
-    // Define a default keymap here.
-    // See https://zmk.dev/docs/development/hardware-integration/new-shield#default-keymap.
     keymap {
         compatible = "zmk,keymap";
 
+        /*
+         * 96 positions: 0-47 = left half, 48-95 = right half.
+         * The right half is a mirrored PCB, so its rows below are listed
+         * inner-to-outer (COL6 .. COL0), matching the physical key order.
+         *
+         * Position 31 / 79 = encoder push switch (matrix ROW3/COL7).
+         * Encoder push (ROW3/COL7): left = play/pause, right = mute.
+         */
         default_layer {
             bindings = <
-                &kp N1 &kp N2    &kp N3 &kp N4
-                &kp A  &kp B     &kp C  &kp D
+                /* LEFT (0-47) */
+                &kp ESC   &kp N1 &kp N2 &kp N3 &kp N4 &kp N5 &none &none
+                &kp TAB   &kp Q  &kp W  &kp E  &kp R  &kp T  &kp GRAVE &none
+                &kp DEL   &kp A  &kp S  &kp D  &kp F  &kp G  &kp LBKT  &none
+                &kp LSHIFT &kp Z &kp X  &kp C  &kp V  &kp B  &kp RBKT  &none
+                &none &none &none &none &kp LALT &kp BSPC &kp SPACE &kp C_PP
+                &none &none &none &none &mo 1   &kp LGUI &kp LCTRL &none
+                /* RIGHT (48-95) */
+                &kp BSPC &kp N0 &kp N9 &kp N8 &kp N7 &kp N6 &none &none
+                &kp BSLH &kp P  &kp O  &kp I  &kp U  &kp Y  &kp MINUS &none
+                &kp SQT  &kp SEMI &kp L &kp K &kp J  &kp H  &kp EQUAL &none
+                &kp RSHIFT &kp FSLH &kp DOT &kp COMMA &kp M &kp N &kp STAR &none
+                &none &none &none &none &kp SPACE &kp ENTER &kp PSCRN &kp C_MUTE
+                &none &none &none &none &kp RCTRL &kp RGUI &tog 2 &none
             >;
+            /* sensor 0 = left encoder, sensor 1 = right encoder */
+            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp VOL_UP VOL_DN>;
+        };
+
+        function_layer {
+            bindings = <
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+            >;
+            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp VOL_UP VOL_DN>;
+        };
+
+        layer_two {
+            bindings = <
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+                &trans &trans &trans &trans &trans &trans &trans &trans
+            >;
+            sensor-bindings = <&inc_dec_kp PG_DN PG_UP &inc_dec_kp VOL_UP VOL_DN>;
         };
     };
 };

@@ -22,7 +22,12 @@
         ;
 };
 
+/* Right half reports global positions 48-95 via a column offset into the
+ * shared 96-position transform (see hitek68.dtsi). */
+&default_transform {
+    col-offset = <8>;
+};
+
 &right_encoder {
-    a-gpios = <&gpio0 31 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
-    b-gpios = <&gpio1 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+    status = "okay";
 };
