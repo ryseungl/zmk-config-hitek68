@@ -101,8 +101,9 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
                          uint8_t **data) {
     ARG_UNUSED(dev);
 
-    /* We only handle Output reports via control pipe (SET_REPORT). */
-    if ((setup->bmRequestType & USB_REQTYPE_TYPE_MASK) != USB_REQTYPE_TYPE_CLASS) {
+    /* We only handle Output reports via control pipe (SET_REPORT).
+     * bmRequestType bits 6-5 are the request type: 1 = class. */
+    if (((setup->bmRequestType >> 5) & 0x03) != 0x01) {
         return -ENOTSUP;
     }
     uint8_t report_id = setup->wValue & 0xFF;
