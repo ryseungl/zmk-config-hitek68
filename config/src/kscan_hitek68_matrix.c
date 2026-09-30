@@ -20,7 +20,7 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#define DT_DRV_COMPAT zmk_kscan_gpio_matrix
+#define DT_DRV_COMPAT hitek68_kscan_gpio_matrix
 
 #define INST_DIODE_DIR(n) DT_ENUM_IDX(DT_DRV_INST(n), diode_direction)
 #define COND_DIODE_DIR(n, row2col_code, col2row_code)                                              \
