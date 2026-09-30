@@ -26,7 +26,7 @@
                 &kp BSPC &kp N0 &kp N9 &kp N8 &kp N7 &kp N6 &none &none
                 &kp BSLH &kp P  &kp O  &kp I  &kp U  &kp Y  &kp MINUS &none
                 &kp SQT  &kp SEMI &kp L &kp K &kp J  &kp H  &kp EQUAL &none
-                &kp RSHIFT &kp FSLH &kp DOT &kp COMMA &kp M &kp N &kp STAR &none
+                &kp RSHIFT &kp FSLH &kp DOT &kp COMMA &kp M &kp N &kp TILDE &none
                 &none &none &none &none &kp SPACE &kp ENTER &kp PSCRN &kp C_MUTE
                 &none &none &none &none &kp RCTRL &kp RGUI &tog 2 &none
             >;
