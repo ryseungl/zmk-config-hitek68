@@ -11,10 +11,6 @@ if(_hitek68_included)
 endif()
 set_property(GLOBAL PROPERTY HITEK68_CMAKELISTS_INCLUDED TRUE)
 
-# Make our custom DTS bindings visible to the devicetree compiler.
-# (Module-root dts/bindings is not reliably picked up for ZMK user configs.)
-list(APPEND DTS_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
-
 
 # Public headers for our module (kscan_runtime.h, etc.)
 target_include_directories(app PRIVATE include)
