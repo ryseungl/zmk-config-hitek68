@@ -19,6 +19,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/device.h>
+#include <zephyr/sys/byteorder.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/usb/class/usb_hid.h>
 #include <zephyr/logging/log.h>
@@ -30,23 +31,38 @@
 LOG_MODULE_REGISTER(hitek68_battery_hid, CONFIG_ZMK_LOG_LEVEL);
 
 #define REPORT_ID_BATTERY 0x01
+#define REPORT_ID_COMMAND 0x02
 #define BATTERY_UNKNOWN 0xFF
 
-/* Vendor HID report descriptor: Usage Page 0xFF00, two battery bytes */
+/* Command IDs (in output report) */
+#define CMD_SET_DEBOUNCE 0x01
+#define CMD_SET_SLEEP 0x02
+
+/* Target: 0=both halves, 1=left, 2=right */
+#define TARGET_BOTH 0
+#define TARGET_LEFT 1
+#define TARGET_RIGHT 2
+
+/* Vendor HID report descriptor: Usage Page 0xFF00.
+ * - Input report 0x01: two battery bytes [left%, right%]
+ * - Output report 0x02: 7-byte command [cmd, target, d0..d4] */
 static const uint8_t vendor_report_desc[] = {
-    0x06, 0x00, 0xFF,       /* Usage Page (Vendor-Defined 0xFF00) */
-    0x09, 0x01,             /* Usage (0x01) */
-    0xA1, 0x01,             /* Collection (Application) */
+    0x06, 0x00, 0xFF,        /* Usage Page (Vendor-Defined 0xFF00) */
+    0x09, 0x01,              /* Usage (0x01) */
+    0xA1, 0x01,              /* Collection (Application) */
     0x85, REPORT_ID_BATTERY, /* Report ID (1) */
-    0x15, 0x00,             /* Logical Minimum (0) */
-    0x26, 0xFF, 0x00,       /* Logical Maximum (255) */
-    0x75, 0x08,             /* Report Size (8) */
-    0x95, 0x01,             /* Report Count (1) */
-    0x09, 0x01,             /* Usage (0x01) — left battery */
-    0x81, 0x02,             /* Input (Data, Variable, Absolute) */
-    0x09, 0x02,             /* Usage (0x02) — right battery */
-    0x81, 0x02,             /* Input (Data, Variable, Absolute) */
-    0xC0,                   /* End Collection */
+    0x15, 0x00,              /* Logical Minimum (0) */
+    0x26, 0xFF, 0x00,        /* Logical Maximum (255) */
+    0x75, 0x08,              /* Report Size (8) */
+    0x95, 0x02,              /* Report Count (2) */
+    0x09, 0x01,              /* Usage (0x01) — left battery */
+    0x09, 0x02,              /* Usage (0x02) — right battery */
+    0x81, 0x02,              /* Input (Data, Variable, Absolute) */
+    0x85, REPORT_ID_COMMAND, /* Report ID (2) */
+    0x09, 0x03,              /* Usage (0x03) — command */
+    0x95, 0x07,              /* Report Count (7) */
+    0x91, 0x02,              /* Output (Data, Variable, Absolute) */
+    0xC0,                    /* End Collection */
 };
 
 /* Latest state of charge per peripheral slot (slot order = bonding order). */
@@ -54,6 +70,9 @@ static uint8_t levels[2] = {BATTERY_UNKNOWN, BATTERY_UNKNOWN};
 
 /* Which slot is the physical LEFT half. Auto-detected from key positions. */
 static uint8_t left_slot = 0;
+
+/* Public accessor for the settings relay (target selection). */
+uint8_t hitek68_battery_left_slot(void) { return left_slot; }
 
 /* Hitek68: positions 0-47 are left half, 48-95 are right half. */
 static bool position_is_left(uint32_t position) { return position < 48; }
@@ -71,8 +90,71 @@ static void int_in_ready_cb(const struct device *dev) {
     k_sem_give(&hid_sem);
 }
 
+/* Relay API (settings_relay.c). Weak stubs if relay not built. */
+__weak int hitek68_relay_set_debounce(uint8_t target, uint32_t press_ms, uint32_t release_ms) {
+    ARG_UNUSED(target);
+    ARG_UNUSED(press_ms);
+    ARG_UNUSED(release_ms);
+    return -ENOSYS;
+}
+__weak int hitek68_relay_set_sleep(uint8_t target, uint32_t timeout_ms) {
+    ARG_UNUSED(target);
+    ARG_UNUSED(timeout_ms);
+    return -ENOSYS;
+}
+
+/* Handle HID output reports (commands from host app). */
+static int set_report_cb(const struct device *dev, struct usb_setup_packet *setup, int32_t *len,
+                         uint8_t **data) {
+    ARG_UNUSED(dev);
+
+    /* We only handle Output reports via control pipe (SET_REPORT). */
+    if ((setup->bmRequestType & USB_REQTYPE_TYPE_MASK) != USB_REQTYPE_TYPE_CLASS) {
+        return -ENOTSUP;
+    }
+    uint8_t report_id = setup->wValue & 0xFF;
+    if (report_id != REPORT_ID_COMMAND) {
+        return -ENOTSUP;
+    }
+
+    /* Output report: [cmd, target, d0, d1, d2, d3, d4] (7 bytes, ID stripped) */
+    if (*len < 7) {
+        LOG_WRN("Command report too short: %d", *len);
+        return -EINVAL;
+    }
+    uint8_t *r = *data;
+    uint8_t cmd = r[0];
+    uint8_t target = r[1];
+
+    if (target > TARGET_RIGHT) {
+        LOG_WRN("Invalid target: %u", target);
+        return -EINVAL;
+    }
+
+    switch (cmd) {
+    case CMD_SET_DEBOUNCE: {
+        uint16_t press = sys_get_le16(&r[2]);
+        uint16_t release = sys_get_le16(&r[4]);
+        LOG_INF("CMD set debounce: target=%u press=%u release=%u", target, press, release);
+        hitek68_relay_set_debounce(target, press, release);
+        break;
+    }
+    case CMD_SET_SLEEP: {
+        uint32_t timeout = sys_get_le32(&r[2]);
+        LOG_INF("CMD set sleep: target=%u timeout=%u", target, timeout);
+        hitek68_relay_set_sleep(target, timeout);
+        break;
+    }
+    default:
+        LOG_WRN("Unknown command: 0x%02x", cmd);
+        return -EINVAL;
+    }
+    return 0;
+}
+
 static const struct hid_ops hid_ops = {
     .int_in_ready = int_in_ready_cb,
+    .set_report = set_report_cb,
 };
 
 static int send_battery_report(void) {

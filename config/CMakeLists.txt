@@ -11,6 +11,29 @@ if(_hitek68_included)
 endif()
 set_property(GLOBAL PROPERTY HITEK68_CMAKELISTS_INCLUDED TRUE)
 
+# Public headers for our module (kscan_runtime.h, etc.)
+target_include_directories(app PRIVATE include)
+
 if(CONFIG_ZMK_SPLIT_BATTERY_HID_REPORT)
   target_sources(app PRIVATE src/battery_hid.c)
+endif()
+
+if(CONFIG_HITEK68_SETTINGS_RELAY)
+  target_sources(app PRIVATE src/settings_relay.c)
+endif()
+
+if(CONFIG_HITEK68_RUNTIME_DEBOUNCE OR CONFIG_HITEK68_RUNTIME_SLEEP)
+  target_sources(app PRIVATE src/hitek68_settings.c)
+endif()
+
+if(CONFIG_HITEK68_RUNTIME_DEBOUNCE)
+  target_sources(app PRIVATE src/kscan_hitek68_matrix.c)
+endif()
+
+if(CONFIG_HITEK68_RUNTIME_SLEEP)
+  target_sources(app PRIVATE src/hitek68_sleep.c)
+endif()
+
+if(CONFIG_HITEK68_SETTINGS_GATT)
+  target_sources(app PRIVATE src/hitek68_settings_gatt.c)
 endif()
