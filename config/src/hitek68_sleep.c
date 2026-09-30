@@ -3,7 +3,8 @@
  *
  * Replaces ZMK's compile-time CONFIG_ZMK_IDLE_SLEEP_TIMEOUT with a RAM
  * variable that can be changed at runtime (and persists via hitek68_settings).
- * Halves must set CONFIG_ZMK_SLEEP=n to avoid double sleep handling.
+ * Halves keep CONFIG_ZMK_SLEEP=y (needed for zmk_pm_* and sys_poweroff) but
+ * set CONFIG_ZMK_IDLE_SLEEP_TIMEOUT to max so only this code triggers sleep.
  *
  * Logic mirrors ZMK's activity.c: when idle longer than the timeout (and not
  * USB-powered), suspend devices and power off. Any keypress wakes (reset).
