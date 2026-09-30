@@ -5,8 +5,8 @@
  * The dongle (central) presents an extra USB HID vendor interface
  * (Usage Page 0xFF00) that pushes a 3-byte INPUT report
  * [0x01, left%, right%] (0xFF = unknown) on every peripheral battery
- * event AND every RESEND_INTERVAL_S seconds, so a host reader that
- * (re)connects sees values within one interval.
+ * event AND every 10 seconds, so a host reader that (re)connects
+ * sees values within one interval.
  *
  * Left/right is auto-detected from keystroke positions: Hitek68 uses
  * a 96-position layout where positions 0-47 are the left half and
@@ -134,8 +134,8 @@ static int hitek68_battery_hid_init(void) {
 
 SYS_INIT(hitek68_battery_hid_init, APPLICATION, 91);
 
-/* Periodic resend so newly-connected host readers get values quickly */
-#define RESEND_INTERVAL_S 3
+/* Periodic resend so newly-connected host readers eventually get values */
+#define RESEND_INTERVAL_S 10
 
 static void resend_work_cb(struct k_work *work) {
     ARG_UNUSED(work);
