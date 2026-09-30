@@ -42,6 +42,9 @@ static struct hitek68_peripheral peripherals[MAX_PERIPHERALS];
 /* Forward: from battery_hid.c — which slot is the left half. */
 extern uint8_t hitek68_battery_left_slot(void);
 
+/* Forward declaration (defined below, used in periph_alloc). */
+static void discover_work_cb(struct k_work *work);
+
 static struct hitek68_peripheral *periph_for_conn(struct bt_conn *conn) {
     for (int i = 0; i < MAX_PERIPHERALS; i++) {
         if (peripherals[i].conn == conn) {
