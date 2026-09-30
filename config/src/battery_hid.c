@@ -27,6 +27,10 @@
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/position_state_changed.h>
 
+/* TEMPORARY PROBE — verifies config/CMakeLists.txt is actually included
+ * in CI builds. If you see this error in CI, inclusion works; remove it. */
+#error "HITEK68_CMAKE_INCLUDED_PROBE"
+
 LOG_MODULE_REGISTER(hitek68_battery_hid, CONFIG_ZMK_LOG_LEVEL);
 
 #define REPORT_ID_BATTERY 0x01
