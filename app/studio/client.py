@@ -74,22 +74,6 @@ def frame(payload: bytes) -> bytes:
     return bytes(out)
 
 
-def _read_byte(ser, deadline, what):
-    """Read one byte, raising TimeoutError past the deadline."""
-    remaining = deadline - time.monotonic()
-    if remaining <= 0:
-        raise TimeoutError("timed out %s" % what)
-    old_timeout = ser.timeout
-    try:
-        ser.timeout = remaining
-        data = ser.read(1)
-    finally:
-        ser.timeout = old_timeout
-    if not data:
-        raise TimeoutError("timed out %s" % what)
-    return data[0]
-
-
 def read_frame(ser, timeout: float = DEFAULT_TIMEOUT) -> bytes:
     """Read one framed payload from ``ser``.
 
@@ -97,27 +81,58 @@ def read_frame(ser, timeout: float = DEFAULT_TIMEOUT) -> bytes:
     unescaped 0xAD end marker, un-escapes 0xAC-prefixed bytes, and resyncs
     (restarts) on an unescaped 0xAB seen mid-frame. Raises TimeoutError if
     no complete frame arrives within ``timeout`` seconds.
+
+    Bytes are pulled from the port in bulk (not one ``read(1)`` at a time):
+    per-byte reads with per-byte timeout reconfiguration are far too slow
+    on Windows to drain a ~1.2KB keymap response inside the deadline.
     """
     deadline = time.monotonic() + timeout
+    old_timeout = ser.timeout
+    ser.timeout = 0.05
+    try:
+        buf = bytearray()  # decoded frame payload
+        raw = bytearray()  # port bytes not yet processed
+        rpos = 0  # read cursor into raw
 
-    # Wait for the start marker.
-    while True:
-        if _read_byte(ser, deadline, "waiting for frame start") == FRAME_START:
-            break
+        def need(n: int, what: str) -> None:
+            """Block until at least ``n`` raw bytes are consumable."""
+            nonlocal rpos
+            while len(raw) - rpos < n:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("timed out %s" % what)
+                avail = ser.in_waiting
+                chunk = ser.read(avail if avail else 1)
+                if chunk:
+                    raw.extend(chunk)
+                # else: nothing arrived yet; loop back to the deadline check
 
-    buf = bytearray()
-    while True:
-        b = _read_byte(ser, deadline, "waiting for frame data")
-        if b == FRAME_END:
-            return bytes(buf)
-        if b == FRAME_ESC:
-            buf.append(_read_byte(ser, deadline, "reading escaped byte"))
-        elif b == FRAME_START:
-            buf.clear()  # resync: a new frame started mid-stream
-        else:
-            buf.append(b)
-        if len(buf) > MAX_FRAME_SIZE:
-            raise ValueError("frame exceeds %d bytes" % MAX_FRAME_SIZE)
+        # Wait for the start marker.
+        while True:
+            need(1, "waiting for frame start")
+            b = raw[rpos]
+            rpos += 1
+            if b == FRAME_START:
+                break
+
+        # Accumulate until the end marker.
+        while True:
+            need(1, "waiting for frame data")
+            b = raw[rpos]
+            rpos += 1
+            if b == FRAME_END:
+                return bytes(buf)
+            if b == FRAME_ESC:
+                need(1, "reading escaped byte")
+                buf.append(raw[rpos])
+                rpos += 1
+            elif b == FRAME_START:
+                buf.clear()  # resync: a new frame started mid-stream
+            else:
+                buf.append(b)
+            if len(buf) > MAX_FRAME_SIZE:
+                raise ValueError("frame exceeds %d bytes" % MAX_FRAME_SIZE)
+    finally:
+        ser.timeout = old_timeout
 
 
 # ---------------------------------------------------------------------------
